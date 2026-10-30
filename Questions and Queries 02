@@ -1,0 +1,168 @@
+-- Here is a fresh set of SQL questions based on the Formula 1 schema. This set is designed to be highly technical, focusing on Window Functions, CTEs, and Complex Joins while remaining solvable within your specified time limits.
+-- Easy Questions
+-- Target: 30–60 seconds. Focus: Basic filtering and aggregation.
+;
+-- Status Lookup: Count how many times each STATUS (e.g., 'Finished', 'Engine', 'Accident') appears in the RESULTS table. Sort by the highest count.
+
+  select 
+  status
+  ,count(status) as count_result
+  from til_playground.f1.results as re
+      left join til_playground.f1.status as st
+          on re.statusid =st.statusid
+      group by status
+
+
+
+
+;
+-- Specific Nationality: Find the FORENAME and SURNAME of all drivers who are 'Italian'.
+
+  select 
+    forename
+    ,surname 
+    ,nationality 
+  from til_playground.f1.drivers
+    where nationality = 'Italian'
+
+
+
+
+
+
+;
+-- Medium Questions
+-- Target: 2–3 minutes. Focus: Joins and Subqueries.
+
+-- The "Top 10" Club: Join DRIVERS and RESULTS to find the total number of times each driver has finished in the top 10 (where POSITION is between 1 and 10). Return the driver's full name and their count.
+
+select 
+  dr.forename
+  ,dr.surname
+  ,re.position
+  ,count(position) as top_ten_times
+
+from til_playground.f1.results as re
+    left join til_playground.f1.drivers as dr
+        on re.driverid = dr.driverid
+  where re.position <= 10
+  group by dr.forename,DR.SURNAME,re.position
+  order by top_ten_times desc
+
+
+
+
+
+
+
+;
+-- Circuit Popularity: Identify which COUNTRY has hosted the most races. 
+
+select 
+  country
+  ,count(country) as country_count
+from til_playground.f1.circuits as ci
+    left join til_playground.f1.races as ra 
+        on ci.circuitid = ra.circuitid
+  group by country
+  order by country_count desc
+
+
+
+;
+-- Sprint Points vs. Race Points: For a specific race (e.g., RACEID = 1080), list each driver's FORENAME, their POINTS from the SPRINT_RESULTS table, and their POINTS from the RESULTS table.
+
+
+select 
+    sr.driverid 
+    ,sr.raceid
+    ,re.points as race_points
+    ,sr.points as sprint_points
+    
+
+from til_playground.f1.sprint_results as sr
+    left join til_playground.f1.results as re
+        on sr.driverid = re.driverid
+        -- and sr.raceid = re.driverid
+    where sr.raceid = 1077
+
+
+
+;
+
+
+
+
+
+
+
+-- Hard Questions
+-- Target: 3–4 minutes. Focus: LEAD, LAG, and CTEs.
+
+
+-- The "Bounced Back" Driver (LAG): Identify drivers who finished outside the top 10 in one race but finished on the podium (Position 1, 2, or 3) in the very next race of the same season.
+
+with q1 as (select 
+  driverid
+  ,raceid
+  ,position 
+from til_playground.f1.results
+  where position <= 3
+) 
+
+select
+
+from q1 
+    left join til_playground.f1.results
+        on 
+
+
+
+
+
+;
+-- Pit Stop Delta (Window Functions): Calculate the difference in time (in MILLISECONDS) between a driver's first pit stop and their second pit stop for every driver in RACEID = 1110.
+
+
+select 
+  driverid
+  ,stop
+  ,milliseconds
+  ,lead(milliseconds) over (
+      partition by driverid
+      order by stop asc 
+      ) as next_ps
+  ,(milliseconds-lead(milliseconds) over (
+      partition by driverid
+      order by stop asc 
+      )) as time_difference
+from til_playground.f1.pit_stops
+    where raceid = 1077
+    and stop = 1 or 2
+
+;
+-- Season Point Progression (CTE + Running Total): Create a CTE that calculates the total points earned by each Constructor per race. In the main query, use a window function to show a running total of those points across the 2023 season.
+
+with q1 as (
+select
+    re.constructorid
+    ,re.raceid
+    ,sum(points) as total_points
+from til_playground.f1.results as re
+    group by re.constructorid,re.raceid
+)
+
+select 
+    constructorid
+    ,raceid
+    ,total_points
+    ,sum(total_points) over (
+    partition by constructorid
+    order by raceid asc) as running_total_points
+
+from q1 
+order by constructorid,raceid
+
+
+
+
