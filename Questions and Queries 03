@@ -1,0 +1,79 @@
+-- //The Fastest Lap Leaderboard (Subqueries)
+-- Identify the driver who set the fastest lap for each race in the 2023 season. Return the Race Name, Driver Forename, Driver Surname, and the FastestLapTime.
+
+WITH FastestLapsPerRace AS (
+    SELECT
+        resultid,
+        raceid,
+        driverid,
+        fastestlaptime,
+        ROW_NUMBER() OVER (PARTITION BY raceid ORDER BY fastestlaptime ASC) as rn
+    FROM
+        til_playground.f1.results
+    WHERE
+        fastestlaptime IS NOT NULL
+)
+SELECT
+    r.name AS RaceName,
+    d.forename,
+    d.surname,
+    f.fastestlaptime AS FastestLapTime
+FROM
+    FastestLapsPerRace f
+JOIN
+    til_playground.f1.races r ON f.raceid = r.raceid
+JOIN
+    til_playground.f1.drivers d ON f.driverid = d.driverid
+WHERE
+    f.rn = 1 AND r.year = 2023; 
+
+
+;
+with q1 as (
+select
+    driverid
+    ,raceid
+    ,min(fastestlaptime) as fastest_lap
+from til_playground.f1.results as re
+     where fastestlaptime is not null
+    group by raceid,driverid
+)
+
+select
+    dr.forename
+    ,dr.surname
+    ,q1.raceid
+    ,min(q1.fastest_lap)
+from q1 as q1
+    left join til_playground.f1.drivers as dr 
+    on q1.driverid = dr.driverid
+    left join til_playground.f1.results as res
+    on res.driverid=q1.driverid
+where q1.fastest_lap < res.fastestlaptime
+    group by q1.raceid,dr.forename,dr.surname
+    order by q1.raceid desc
+;
+
+
+//subquery route;
+select 
+dr.forename
+,dr.surname
+,ra.name
+,re.raceid
+,min(re.fastestlaptime)
+from til_playground.f1.results as re
+    left join til_playground.f1.drivers as dr
+        on dr.driverid = re.driverid
+    left join til_playground.f1.races as ra
+        on ra.raceid =re.raceid
+
+where re.fastestlaptime <
+    (select
+    min(fastestlaptime) as FastestLap
+    from  til_playground.f1.results
+    )
+
+group by dr.forename,dr.surname,re.raceid,ra.name
+order by raceid
+                                                                
