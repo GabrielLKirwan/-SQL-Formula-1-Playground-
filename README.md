@@ -24,7 +24,7 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
 **🟢 Easy Questions**
 
 1. Grand Prix Calendar: Select the NAME, DATE, and URL of all races held in the year 2022, ordered by the ROUND number.
-
+```
     SELECT 
         name,
         round,
@@ -33,28 +33,29 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
     FROM til_playground.f1.races
     WHERE year = 2022
     ORDER BY round ASC;
-
+```
 
 2. Driver Nationalities: Find the total number of unique NATIONALITY values present in the DRIVERS table.
-
+```
     SELECT  
         nationality,
         COUNT(nationality) AS count
     FROM til_playground.f1.drivers 
     GROUP BY nationality;
-
+```
 
 3. Active Seasons: List all years from the SEASONS table in descending order (newest to oldest).
-
+```
     SELECT
         year
     FROM til_playground.f1.seasons
     ORDER BY year DESC;
+```
 
 **🟡 Medium Questions**
 
 1. Circuit Locations: Join the RACES and CIRCUITS tables to list every race NAME from the 2022 season along with its corresponding circuit LOCATION and COUNTRY.
-
+```
     SELECT
         ra.name,
         ra.circuitid,
@@ -64,10 +65,10 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
     LEFT JOIN til_playground.f1.circuits AS ci
         ON ra.circuitid = ci.circuitid
     WHERE year = 2022;
-
+```
 
 2. Point Scorers: Find the top 10 drivers who have earned the most career POINTS.
-
+```
     SELECT 
         dr.forename,
         dr.surname,
@@ -78,10 +79,10 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
     GROUP BY dr.forename, dr.surname
     ORDER BY total_points DESC
     LIMIT 10;
-
+```
 
 3. DNFs by Constructor: Using the RESULTS and STATUS tables, count how many times each CONSTRUCTORID has finished a race with the status 'Engine' or 'Gearbox'.
-
+```
     SELECT
         re.constructorid,
         COUNT(re.resultid) AS dnf_count
@@ -91,12 +92,12 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
     WHERE st.status IN ('Engine', 'Gearbox')
     GROUP BY re.constructorid
     ORDER BY dnf_count DESC;
-
+```
 
 **🔴 Hard Questions**
 
 1. The Lap Time Delta: For RACEID = 1094, use a Window Function to show each driver's lap time alongside the time of the previous lap they completed. Calculate the difference.
-    
+```    
     WITH q1 AS (
         SELECT 
             driverid,
@@ -116,10 +117,11 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
         prev_time,
         (prev_time - milliseconds) AS difference 
     FROM q1;
-
+```
 
 2. Consistency Ranking: Rank the drivers from 1 to 10 based on who has the fastest average pit stop durations.
 
+```
     WITH q1 AS (
         SELECT 
             driverid,
@@ -133,7 +135,7 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
     FROM q1 
     ORDER BY avg_ps ASC
     LIMIT 10;
-
+```
 
 **🚀 Set 2: Advanced Joins, CTEs, and Window Functions**
 
@@ -141,6 +143,7 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
 
 1. Status Lookup: Count how many times each STATUS appears in the RESULTS table. Sort by the highest count.
 
+```
     SELECT 
         status,
         COUNT(status) AS count_result
@@ -149,27 +152,24 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
         ON re.statusid = st.statusid
     GROUP BY status
     ORDER BY count_result DESC;
+```
 
+2. Specific Nationality: Find the FORENAME and SURNAME of all drivers who are 'Italian'.
 
-2. Recent Races (Work in Progress): List the NAME and DATE of all races held in the year 2023, ordered by DATE descending.
-
--- TODO: Write SELECT statement targeting races table where year = 2023
-
-
-3. Specific Nationality: Find the FORENAME and SURNAME of all drivers who are 'Italian'.
-
+```
     SELECT 
         forename,
         surname,
         nationality 
     FROM til_playground.f1.drivers
     WHERE nationality = 'Italian';
-
+```
 
 **🟡 Medium Questions**
 
 1. The "Top 10" Club: Find the total number of times each driver has finished in the top 10.
 
+```
     SELECT 
         dr.forename,
         dr.surname,
@@ -184,10 +184,11 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
         dr.surname,
         re.position
     ORDER BY top_ten_times DESC;
-    
+```    
 
 2. Circuit Popularity: Identify which COUNTRY has hosted the most races.
 
+```
     SELECT 
         country,
         COUNT(country) AS country_count
@@ -196,10 +197,11 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
         ON ci.circuitid = ra.circuitid
     GROUP BY country
     ORDER BY country_count DESC;
-
+```
 
 3. Sprint Points vs. Race Points: For RACEID = 1077, list each driver's points from the SPRINT_RESULTS and RESULTS tables.
 
+```
     SELECT 
         sr.driverid,
         sr.raceid,
@@ -209,29 +211,38 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
     LEFT JOIN til_playground.f1.results AS re
         ON sr.driverid = re.driverid
     WHERE sr.raceid = 1077;
-
+```
 
 **🔴 Hard Questions**
 
-1. The "Bounced Back" Driver (Work in Progress): Identify drivers who finished outside the top 10 in one race but finished on the podium in the next race.
+- The Lap Time Delta: For a specific race (e.g., RACEID = 1100), use a Window Function to show each driver's lap time (MILLISECONDS) alongside the time of the previous lap they completed. Calculate the difference between the two.
+ ```
+    with q1 as (
+    
+    select 
+    driverid
+    ,lap
+    ,milliseconds
+    ,lag(milliseconds) over (
+        partition by driverid
+        order by lap asc) as prev_time
+    from til_playground.f1.lap_times
+    where raceid=1094)
+    
+    select 
+    driverid
+    ,lap
+    ,milliseconds
+    ,prev_time
+    ,(prev_time-milliseconds) as difference 
+    from q1 
+```
 
-    WITH q1 AS (
-        SELECT 
-            driverid,
-            raceid,
-            position 
-        FROM til_playground.f1.results
-        WHERE position <= 3
-    ) 
-    SELECT
-    -- TODO: Complete logic using LAG() to check previous race position
-    FROM q1 
-    LEFT JOIN til_playground.f1.results
-    -- ON ...
     
 
 2. Pit Stop Delta: Calculate the difference in time between a driver's first pit stop and their second pit stop for every driver in RACEID = 1077.
-    
+
+```    
     SELECT 
         driverid,
         stop,
@@ -247,10 +258,10 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
     FROM til_playground.f1.pit_stops
     WHERE raceid = 1077
       AND (stop = 1 OR stop = 2);
-
+```
 
 3. Season Point Progression: Use a window function to show a running total of Constructor points.
-
+```
     WITH q1 AS (
         SELECT
             re.constructorid,
@@ -269,14 +280,14 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
         ) AS running_total_points
     FROM q1 
     ORDER BY constructorid, raceid;
-
+```
 
 **🏎️ Set 3: Gap Analysis, Consistency, and Validation**
 
 **🟢 Easy Questions**
 
 1. Podium Count: Find the total number of podium finishes for each CONSTRUCTORID.
-
+```
     SELECT 
         constructorid,
         COUNT(position) AS top_3_finishes
@@ -284,32 +295,33 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
     WHERE position <= 3
     GROUP BY constructorid
     ORDER BY top_3_finishes DESC;
-
+```
 
 2. Circuit Altitudes: List all circuits located at an altitude higher than 500 meters.
-
+```
     SELECT 
         name,
         location,
         alt
     FROM til_playground.f1.circuits
     WHERE alt > 500;
-    
+```    
 
 3. Driver Contact Info: List all drivers who have a URL containing the word 'Wikipedia'.
-
+```
     SELECT 
         forename,
         surname,
         url
     FROM til_playground.f1.drivers
     WHERE CONTAINS(url, 'wikipedia');
-
+```
 
 
 **🔴 Hard Questions**
 1. The "Overtaker" Tracker: Calculate the position change for every lap for a single driver (Driver 840, Race 1094).
 
+```
     SELECT 
         lt.driverid,
         lt.lap,
@@ -319,10 +331,11 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
     FROM til_playground.f1.lap_times AS lt 
     WHERE lt.raceid = 1094
       AND lt.driverid = 840;
-    
+```    
 
 2. Gap to the Leader: Calculate the time difference between each driver and the leader on Lap 5 of Race 1094.
-    
+
+ ```   
     WITH q1 AS (
         SELECT
             driverid AS leaderid,
@@ -343,10 +356,11 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
         ON q1.leaderid = lt.driverid
     WHERE lt.raceid = 1094
       AND lt.lap = 5;
-
+```
 
 3. The Fastest Lap Leaderboard (Window Function Solution): Identify the driver who set the fastest lap for each race in the 2023 season.
 
+```
     WITH FastestLapsPerRace AS (
         SELECT
             resultid,
@@ -372,3 +386,6 @@ results, lap_times, pit_stops, sprint_results, status, qualifying
         ON f.driverid = d.driverid
     WHERE f.rn = 1 
       AND r.year = 2023;
+```
+
+
