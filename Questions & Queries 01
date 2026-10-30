@@ -1,0 +1,122 @@
+-- Easy Questions
+-- Target: 30–60 seconds per question.
+
+-- Grand Prix Calendar: Select the NAME, DATE, and URL of all races held in the year 2023, ordered by the ROUND number.
+
+select 
+name
+,round
+,date
+,url
+from til_playground.f1.races
+where year = 2022
+order by round asc
+
+
+;
+-- Driver Nationalities: Find the total number of unique NATIONALITY values present in the DRIVERS table.
+select  
+nationality
+,count(nationality) as count
+from til_playground.f1.drivers 
+group by  nationality
+
+
+;
+
+-- Active Seasons: List all years from the SEASONS table in descending order (newest to oldest).
+
+select
+year
+from til_playground.f1.seasons
+order by year desc
+
+
+
+;
+-- Medium Questions
+-- Target: 2–3 minutes per question. Focus: Joins and Grouping.
+
+-- Circuit Locations: Join the RACES and CIRCUITS tables to list every race NAME from the 2023 season along with its corresponding circuit LOCATION and COUNTRY.
+select
+    ra.name 
+    ,ra.circuitid
+    ,ci.location
+    ,ci.country
+from til_playground.f1.races as ra 
+    left join til_playground.f1.circuits as ci
+        on ra.circuitid = ci.circuitid
+    where year = 2022
+
+
+
+;
+-- Point Scorers: Find the top 10 drivers who have earned the most career POINTS (from the RESULTS table). Return their FORENAME, SURNAME, and the sum of their points.
+
+select 
+dr.forename 
+    ,dr.surname 
+    ,sum(re.points) as total_points
+    
+
+from til_playground.f1.results as re
+    left join til_playground.f1.drivers as dr 
+        on re.driverid = dr.driverid 
+group by dr.forename,dr.surname
+order by total_points desc
+limit 10 
+
+
+-- DNFs by Constructor: Using the RESULTS and STATUS tables, count how many times each CONSTRUCTORID has finished a race with the status 'Engine' or 'Gearbox'.
+
+
+select
+
+from til_playground.f1.results
+
+-- Hard Questions
+-- Target: 3–4 minutes per question. Focus: Window Functions and CTEs.
+
+-- The Lap Time Delta: For a specific race (e.g., RACEID = 1100), use a Window Function to show each driver's lap time (MILLISECONDS) alongside the time of the previous lap they completed. Calculate the difference between the two.
+;
+with q1 as (
+
+select 
+driverid
+,lap
+,milliseconds
+,lag(milliseconds) over (
+    partition by driverid
+    order by lap asc) as prev_time
+from til_playground.f1.lap_times
+where raceid=1094)
+
+select 
+driverid
+,lap
+,milliseconds
+,prev_time
+,(prev_time-milliseconds) as difference 
+from q1 
+
+
+
+
+-- Logic: Use LAG() OVER(PARTITION BY driverId ORDER BY lap).
+
+-- Consistency Ranking: Use a CTE to calculate the average pit stop DURATION for every driver in the 2023 season. In the main query, rank the drivers from 1 to 10 based on who has the fastest average stops.
+;
+
+with q1 as (
+select 
+driverid
+avg(duration) as avg_ps
+from til_playground.f1.pit_stops
+) 
+
+select 
+driverid 
+,avg_ps
+from q1 
+     v order by avg_ps desc  
+
